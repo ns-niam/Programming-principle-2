@@ -1,8 +1,8 @@
 #File handing.
 #Seventh exercise: Write a Python program to copy the contents of a file to another file.
 
-first_file = "C:/Users/user/niam/PP2/Lab 6/txt1.file"
-second_file  = "C:/Users/user/niam/PP2/Lab 6/txt.file"
+first_file = "C:/Users/user/niam/PP2/Lab 6/file2.txt"
+second_file  = "C:/Users/user/niam/PP2/Lab 6/file.txt"
 
 a = open(first_file, "r")
 b = open(second_file, "w+")
