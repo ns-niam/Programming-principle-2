@@ -7,7 +7,7 @@ connection = psycopg2.connect(
     password="root",
     host="127.0.0.1",
     port="5432",
-    database="mydb"
+    database="phonebook"
 )
 cursor = connection.cursor()
 
