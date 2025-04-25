@@ -1,21 +1,23 @@
 import psycopg2
 import csv
-from psycopg2 import Error
 
-connection = psycopg2.connect(user="postgres",
-                                  password="root",
-                                  host="127.0.0.1",
-                                  port="5432",
-                                  database="mydb")
-
+# Connect to PostgreSQL database
+connection = psycopg2.connect(
+    user="postgres",
+    password="root",
+    host="127.0.0.1",
+    port="5432",
+    database="mydb"
+)
 cursor = connection.cursor()
 
+# Menu prompt
 def hello():
-    print("What you want?(1 - Insert, 2 - Update, 3 - Delete, 4 - Query):")
-    way = input()
+    print("What do you want to do?")
+    print("1 - Insert\n2 - Update\n3 - Delete\n4 - Query")
+    way = input("Choose: ")
     if way == "1":
-        print("What way to insert?(C - Console, F - CSV)")
-        ins = input()
+        ins = input("How to insert? (C - Console, F - CSV): ")
         return ins
     elif way == "2":
         return "U"
@@ -23,75 +25,95 @@ def hello():
         return "D"
     elif way == "4":
         return "Q"
+    else:
+        print("Invalid option")
+        return None
 
-
+# Insert data manually via console
 def insert_from_console():
-    print("Введите данные:")
-    username = input()
-    phone = input()
-    sql  = f'''INSERT INTO PhoneBook(username, phone) VALUES ('{username}', '{phone}'); '''
-    cursor.execute(sql)
+    username = input("Enter username: ")
+    phone = input("Enter phone number: ")
+    sql = "INSERT INTO phonebook (username, phone) VALUES (%s, %s);"
+    cursor.execute(sql, (username, phone))
+    print("Inserted.")
 
+    # Commit the transaction to make sure the data is saved
+    connection.commit()
+
+# Insert data from CSV file
 def insert_from_csv():
-    with open('file.csv', 'r') as csvfile:
-        csv_reader = csv.reader(csvfile)
-        for row in csv_reader:
-            sql = f"INSERT INTO PhoneBook (username, phone) VALUES (%s, %s)"
-            cursor.execute(sql, row)
+    try:
+        with open('file.csv', 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                cursor.execute("INSERT INTO phonebook (username, phone) VALUES (%s, %s)", row)
+            print("CSV Data Inserted.")
+            # Commit the transaction to make sure the data is saved
+            connection.commit()
+    except FileNotFoundError:
+        print("file.csv not found.")
 
+# Delete a user
 def delete():
-    print("What's username do u want delete?")
-    user = input()
-    sql = f'''DELETE FROM PhoneBook WHERE username = '{user}';'''
-    cursor.execute(sql)
+    user = input("Enter username to delete: ")
+    sql = "DELETE FROM phonebook WHERE username = %s;"
+    cursor.execute(sql, (user,))
+    print("Deleted if found.")
+    # Commit the transaction
+    connection.commit()
 
+# Update username or phone
 def update():
-    print("What do u want update? (1 - username, 2 - phone)")
-    if input() == "1":
-        print("What's old username")
-        old_user = input()
-        print("What's new username?")
-        new_user = input()
-        sql = f'''UPDATE PhoneBook SET username = '{new_user}' WHERE username = '{old_user}'; '''
-    elif input() == "2":
-        print("What's old phone")
-        old_phone = input()
-        print("What's new phone?")
-        new_phone = input()
-        sql = f'''UPDATE PhoneBook SET phone = '{new_phone}' WHERE phone = '{old_phone}'; '''
-    cursor.execute(sql)
+    print("What to update? (1 - Username, 2 - Phone)")
+    choice = input("Choose: ")
+    if choice == "1":
+        old_user = input("Old username: ")
+        new_user = input("New username: ")
+        sql = "UPDATE phonebook SET username = %s WHERE username = %s;"
+        cursor.execute(sql, (new_user, old_user))
+    elif choice == "2":
+        old_phone = input("Old phone: ")
+        new_phone = input("New phone: ")
+        sql = "UPDATE phonebook SET phone = %s WHERE phone = %s;"
+        cursor.execute(sql, (new_phone, old_phone))
+    else:
+        print("Invalid option.")
+        return
+    print("Updated if match found.")
+    # Commit the transaction
+    connection.commit()
 
+# Query data
 def query():
-    print("What's column do u want? (1 - username, 2 - phone, 3 - all)")
-    select = input()
-    print("Do u have filter for query? (1 - YES, 2 - NO)")
-    isFilter = input()
+    print("What to select? (1 - Username, 2 - Phone, 3 - All)")
+    select = input("Choose: ")
+    print("Filter? (1 - Yes, 2 - No)")
+    isFilter = input("Choose: ")
+
+    condition = None
     if isFilter == "1":
-        print("What's filter?")
-        condition = input()
+        condition = input("Enter condition (e.g., username = 'john'): ")
+
+    if select == "1":
+        sql = f"SELECT username FROM phonebook"
+    elif select == "2":
+        sql = f"SELECT phone FROM phonebook"
     else:
-        condition = None
+        sql = f"SELECT * FROM phonebook"
+
     if condition:
-        if select == "1":
-            sql = f'''SELECT username FROM PhoneBook WHERE {condition};'''
-        elif select == "2":
-            sql = f'''SELECT phone FROM PhoneBook WHERE {condition};'''
-        else:
-            sql = f'''SELECT * FROM PhoneBook WHERE {condition};'''
-    else:
-        if select == "1":
-            sql = f'''SELECT username FROM PhoneBook;'''
-        elif select == "2":
-            sql = f'''SELECT phone FROM PhoneBook;'''
-        else:
-            sql = f'''SELECT * FROM PhoneBook;'''
+        sql += f" WHERE {condition}"
+
     cursor.execute(sql)
-    answer = cursor.fetchall()
-    for row in answer:
-        print(row)
+    rows = cursor.fetchall()
+    if rows:
+        for row in rows:
+            print(row)
+    else:
+        print("No results.")
 
+# Run operation
 what = hello()
-
 if what == "C":
     insert_from_console()
 elif what == "F":
@@ -104,10 +126,9 @@ elif what == "Q":
     query()
 
 connection.commit()
-print("Succes!")
+print("✅ Success!")
 
-
-if connection:
-    cursor.close()
-    connection.close()
-    print("Соединение с PostgreSQL закрыто")
+# Close connection
+cursor.close()
+connection.close()
+print("🔒 PostgreSQL connection closed.")
