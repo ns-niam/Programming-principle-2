@@ -148,8 +148,7 @@ elif what == "limit":
 connection.commit()
 print("Succes!")
 
-
 if connection:
     cursor.close()
     connection.close()
-    print("Соединение с PostgreSQL закрыто")
+    print("Connection to PostgreSQL is closed")
